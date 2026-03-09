@@ -1,0 +1,11 @@
+- name: Configure Kali VM
+  hosts: kali_boxes
+  vars_prompt:
+    - name: user_password
+      prompt: "Enter the new password for the cyberfox user"
+      private: yes
+  
+  roles:
+    - common
+    - remote_access
+    - obsidian

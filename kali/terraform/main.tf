@@ -4,6 +4,10 @@ terraform {
       source = "telmate/proxmox"
       version = "3.0.2-rc07"
     }
+    ansible = {
+      source = "ansible/ansible"
+      version = "1.4.0"
+    }
   }
 }
 
@@ -21,6 +25,17 @@ type = string
 sensitive = true
 }
 
+resource "local_file" "ansible_inventory" {
+  content = templatefile("${path.module}/inventory.tftpl",
+    {
+      kali_instances = {
+        for instance in [proxmox_vm_qemu.lab] :
+        instance.name => try(instance.default_ipv4_address, "pending_ip")
+      }
+    }
+  )
+  filename = "${path.module}/../ansible/inventory.ini"
+}
 
 provider "proxmox" {
     pm_api_url = var.proxmox_api_url

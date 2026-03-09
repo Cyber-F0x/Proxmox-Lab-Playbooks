@@ -1,0 +1,4 @@
+- name: Change password for the cyberfox
+  user:
+    name: cyberfox
+    password: "{{ user_password | password_hash('sha512') }}"

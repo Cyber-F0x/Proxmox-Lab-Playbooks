@@ -1,0 +1,19 @@
+- name: Install xrdp 📦
+  apt:
+    name: xrdp
+    state: present
+    update_cache: yes
+
+- name: Configure xsession for the cyberfox user
+  copy:
+    content: "startxfce4"
+    dest: "/home/cyberfox/.xsession"
+    owner: cyberfox
+    group: cyberfox
+    mode: '0644'
+
+- name: Ensure xrdp service is started and enabled 
+  systemd:
+    name: xrdp
+    state: started
+    enabled: yes
