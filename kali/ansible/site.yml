@@ -4,8 +4,45 @@
     - name: user_password
       prompt: "Enter the new password for the cyberfox user"
       private: yes
-  
+
+  vars:
+    ansible_become_password: "password123"
+
   roles:
     - common
     - remote_access
     - obsidian
+    - typora
+  
+  post_tasks:
+    - name: Change password for the cyberfox user
+      ansible.builtin.user:
+        name: cyberfox
+        password: "{{ user_password | password_hash('sha512') }}"
+      become: yes
+
+
+    - name: Add plugin  panel's plugin list
+      community.general.xfconf:
+        channel: xfce4-panel
+        property: /panels/panel-1/plugin-ids
+        value: [1, 2, 3, 50, 51] 
+        value_type: int
+        state: present
+
+    - name: Create Remmina connection profile for the new box
+      delegate_to: localhost  
+      ansible.builtin.copy:
+        dest: "~/.local/share/remmina/{{ inventory_hostname }}.remmina"
+        content: |
+          [remmina]
+          name={{ inventory_hostname }}
+          server={{ ansible_host }}
+          protocol=RDP
+          username=cyberfox
+          password=.
+          resolution_mode=1
+          color_depth=32
+          ssh_tunnel_enabled=0
+          cert_ignore=1
+        mode: '0600'

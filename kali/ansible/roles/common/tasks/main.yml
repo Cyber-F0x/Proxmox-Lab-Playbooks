@@ -1,0 +1,22 @@
+---
+- name: Update all packages to the latest version
+  ansible.builtin.apt:
+    name: "*"
+    state: latest
+    update_cache: yes
+  become: yes
+
+- name: Set Linux system keyboard layout to UK
+  ansible.builtin.command: localectl set-keymap uk
+  become: true
+
+- name: Set X11 (Graphical) keyboard layout to UK
+  ansible.builtin.command: localectl set-x11-keymap gb
+  become: true
+
+- name: Ensure keyboard config file is set to UK
+  ansible.builtin.lineinfile:
+    path: /etc/default/keyboard
+    regexp: '^XKBLAYOUT='
+    line: 'XKBLAYOUT="gb"'
+  become: true

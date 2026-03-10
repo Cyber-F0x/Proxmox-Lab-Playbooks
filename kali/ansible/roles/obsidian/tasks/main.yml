@@ -1,15 +1,22 @@
-- name: Add Obsidian launcher to panel 1 (ID 50) 
-  xfconf:
+---
+- name: Download and install Obsidian .deb package
+  ansible.builtin.apt:
+    deb: "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.12.4/obsidian_1.12.4_amd64.deb"
+  become: yes
+
+- name: Create Obsidian launcher plugin on panel
+  community.general.xfconf:
     channel: xfce4-panel
-    property: /plugins/plugin-50
-    value: launcher
-    value_type: string
+    property: "/plugins/plugin-50"
+    value: "launcher"
+    value_type: "string"
     state: present
 
-- name: Link Obsidian .desktop file to launcher 50 
-  xfconf:
+- name: Add obsidian.desktop to the launcher items
+  community.general.xfconf:
     channel: xfce4-panel
-    property: /plugins/plugin-50/items
-    value: "obsidian.desktop"
-    value_type: string
+    property: "/plugins/plugin-50/items"
+    value: 
+      - "obsidian.desktop"
+    value_type: "string"
     state: present

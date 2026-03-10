@@ -1,9 +1,0 @@
-- name: Download typora .deb package
-  get_url:
-    url: "https://downloads.typora.io/linux/typora_1.12.4_amd64.deb"
-    dest: "/tmp/typora.deb"
-
-
-- name: Install typora from local file 
-  apt:
-    deb: /tmp/typora.deb

@@ -1,15 +1,26 @@
-- name: Add typora launcher to panel 1 (ID 51) 
-  xfconf:
+---
+- name: Download Typora .deb package
+  ansible.builtin.apt:
+    deb: "https://downloads.typora.io/linux/typora_1.12.4_amd64.deb"
+  become: yes
+
+- name: Define Typora launcher type
+  community.general.xfconf:
     channel: xfce4-panel
     property: /plugins/plugin-51
     value: launcher
     value_type: string
     state: present
 
-- name: Link typora .desktop file to launcher 51
-  xfconf:
+- name: Assign typora.desktop to launcher 51
+  community.general.xfconf:
     channel: xfce4-panel
     property: /plugins/plugin-51/items
-    value: "typora.desktop"
+    value: 
+      - "typora.desktop"  # This ensures it is treated as an array
     value_type: string
     state: present
+
+
+
+    
