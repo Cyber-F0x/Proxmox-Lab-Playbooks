@@ -1,0 +1,15 @@
+- name: Ensure curl is installed
+  ansible.builtin.package:
+    name: curl
+    state: present
+
+- name: Run Sliver installation script
+  ansible.builtin.shell:
+    cmd: "curl https://sliver.sh/install | bash"
+    creates: /usr/local/bin/sliver
+
+- name: Ensure Sliver service is started and enabled
+  ansible.builtin.systemd:
+    name: sliver
+    state: started
+    enabled: yes

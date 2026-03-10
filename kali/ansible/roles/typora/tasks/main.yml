@@ -16,8 +16,7 @@
   community.general.xfconf:
     channel: xfce4-panel
     property: /plugins/plugin-51/items
-    value: 
-      - "typora.desktop"  # This ensures it is treated as an array
+    value: "typora.desktop"  
     value_type: string
     state: present
 

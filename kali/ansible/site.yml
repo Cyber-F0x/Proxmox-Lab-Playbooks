@@ -6,13 +6,16 @@
       private: yes
 
   vars:
-    ansible_become_password: "password123"
+    ansible_become_password: "password"
+    target_user: "cyberfox"
+    
 
   roles:
     - common
     - remote_access
     - obsidian
     - typora
+    - sliver
   
   post_tasks:
     - name: Change password for the cyberfox user
@@ -21,14 +24,6 @@
         password: "{{ user_password | password_hash('sha512') }}"
       become: yes
 
-
-    - name: Add plugin  panel's plugin list
-      community.general.xfconf:
-        channel: xfce4-panel
-        property: /panels/panel-1/plugin-ids
-        value: [1, 2, 3, 50, 51] 
-        value_type: int
-        state: present
 
     - name: Create Remmina connection profile for the new box
       delegate_to: localhost  
@@ -46,3 +41,26 @@
           ssh_tunnel_enabled=0
           cert_ignore=1
         mode: '0600'
+
+    - name: Setup Obsidian Taskbar
+      ansible.builtin.include_tasks: tasks/add_to_panel.yml
+      vars:
+        app:
+          name: "Obsidian"
+          exec: "/usr/bin/obsidian --no-sandbox"
+          icon: "obsidian"
+          id: 200
+
+    - name: Setup Typora Taskbar
+      ansible.builtin.include_tasks: tasks/add_to_panel.yml
+      vars:
+        app:
+          name: "Typora"
+          exec: "/usr/bin/typora"
+          icon: "typora"
+          id: 201
+
+    - name: Refresh Xfce Panel (Once at the end)
+      ansible.builtin.shell: "export $(dbus-launch); xfce4-panel -r"
+      become_user: "{{ target_user }}"
+      ignore_errors: yes

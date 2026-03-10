@@ -1,0 +1,32 @@
+- name: Install autofs and cifs-utils
+  apt:
+    name:
+      - autofs
+      - cifs-utils
+    state: present
+    update_cache: yes
+
+- name: Create mount root directory
+  file:
+    path: "{{ smb_mount_root }}"
+    state: directory
+    mode: '0755'
+
+- name: Configure auto.master
+  template:
+    src: auto.master.j2
+    dest: /etc/auto.master
+  notify: restart autofs
+
+- name: Configure SMB map file
+  template:
+    src: auto.smb_shares.j2
+    dest: "/etc/auto.{{ smb_share_name }}"
+    mode: '0600'
+  notify: restart autofs
+
+- name: Ensure autofs is started and enabled
+  service:
+    name: autofs
+    state: started
+    enabled: yes

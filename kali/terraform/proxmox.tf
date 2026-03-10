@@ -1,16 +1,14 @@
 resource "proxmox_vm_qemu" "lab" {
     clone = "kali-2025-base-20260309-2101"
+    full_clone = false
     target_node = "pve"
     agent = 1
-    name    = "kali-opsnet"
+    name = "kali-opsnet"
     cpu {
          sockets = 2
          cores   = 8
         }
-    
     memory  = 16384
-
-    
     disk {
         type    = "disk"
         slot    = "scsi0"
