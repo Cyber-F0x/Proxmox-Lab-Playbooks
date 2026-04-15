@@ -1,0 +1,85 @@
+---
+#- name: Disable Windows Defender Real-Time Protection
+#  ansible.windows.win_shell: Set-MpPreference -DisableRealtimeMonitoring $true
+#  ignore_errors: yes 
+
+#- name: Add the entire C:\ drive to Windows Defender Exclusions
+#  ansible.windows.win_shell:
+#    cmd: Add-MpPreference -ExclusionPath "C:\"
+  
+- name: Disable Auto Sample Submission (Optional but recommended for dev boxes)
+  ansible.windows.win_shell: Set-MpPreference -SubmitSamplesConsent 2
+
+- name: Ensure Chocolatey itself is installed and updated
+  ansible.windows.win_shell: |
+    if (!(Test-Path "$env:ProgramData\chocolatey\bin\choco.exe")) {
+      Set-ExecutionPolicy Bypass -Scope Process -Force
+      [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+      iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    }
+  register: choco_install
+  changed_when: "'Chocolatey (choco.exe) is now ready' in choco_install.stdout"
+
+- name: Install Windows Updates and Reboot
+  ansible.windows.win_updates:
+    category_names:
+      - SecurityUpdates
+      - CriticalUpdates
+      - UpdateRollups
+    state: installed
+    reboot: yes
+    reboot_timeout: 3600
+  register: update_result
+
+- name: Output update results
+  ansible.builtin.debug:
+    msg: "Installed {{ update_result.installed_update_count }} updates. Rebooted: {{ update_result.rebooted }}"
+
+
+
+- name: Install Development Languages and IDEs
+  chocolatey.chocolatey.win_chocolatey:
+    name:
+      - git
+      - python
+      - golang
+      - rust
+      - vscode
+    state: present
+
+- name: Refresh environment variables for the current Ansible session
+  ansible.windows.win_shell: |
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+- name: Ensure a base directory exists for development tools
+  ansible.windows.win_file:
+    path: C:\Src
+    state: directory
+
+- name: Clone target GitHub repositories
+  ansible.windows.win_shell: |
+    if (-not (Test-Path "{{ item.dest }}\.git")) {
+        git clone "{{ item.repo }}" "{{ item.dest }}"
+    } else {
+        # If the repo exists, optionally pull the latest changes
+        Set-Location "{{ item.dest }}"
+        git pull
+    }
+  # This registers the output so we don't spam the console unless something fails
+  register: git_clone_results
+  changed_when: "'Receiving objects' in git_clone_results.stdout or 'Updating' in git_clone_results.stdout"
+  loop:
+    # Add your required tools here. Since you have VS2022, C# projects are ready to compile.
+    - { repo: 'https://github.com/GhostPack/Rubeus.git', dest: 'C:\Src\Rubeus' }
+    - { repo: 'https://github.com/GhostPack/Seatbelt.git', dest: 'C:\Src\Seatbelt' }
+    - { repo: 'https://github.com/TheWover/donut.git', dest: 'C:\Src\Donut' }
+    - { repo: 'https://github.com/Flangvik/SharpCollection.git', dest: 'C:\Src\SharpCollection' }
+    - { repo: 'https://github.com/matterpreter/DefenderCheck.git', dest: 'C:\Src\DefenderCheck' }
+
+
+- name: Install Daily Driver Applications
+  chocolatey.chocolatey.win_chocolatey:
+    name:
+      - firefox
+      - obsidian
+    state: present

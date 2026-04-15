@@ -1,0 +1,106 @@
+---
+  - name: Download Sliver Server binary
+    ansible.builtin.get_url:
+      url: https://github.com/BishopFox/sliver/releases/download/v1.7.3/sliver-server_linux-amd64
+      dest: /usr/local/bin/sliver-server
+      mode: '0755'
+    when: sliver_mode == 'server'
+
+  - name: Create Sliver Systemd Service
+    ansible.builtin.copy:
+      dest: /etc/systemd/system/sliver.service
+      content: |
+        [Unit]
+        Description=Sliver C2 Server
+        After=network.target
+
+        [Service]
+        Type=simple
+        ExecStart=/usr/local/bin/sliver-server daemon
+        Restart=always
+        RestartSec=5
+        # Run as root to allow binding to privileged ports (53, 80, 443) later
+        User=root
+
+        [Install]
+        WantedBy=multi-user.target
+    when: sliver_mode == 'server'
+    notify: restart_sliver
+
+  - name: Ensure Sliver service is enabled and running
+    ansible.builtin.systemd:
+      name: sliver
+      enabled: yes
+      state: started
+      daemon_reload: yes
+    when: sliver_mode == 'server'
+
+  - name: Wait for Sliver gRPC listener to initialize
+    ansible.builtin.wait_for:
+      port: 31337
+      delay: 5
+      timeout: 30
+    when: sliver_mode == 'server'
+
+  - name: Generate Multiplayer Operator Config
+    ansible.builtin.command:
+      # Generates the config for your user, pointing back to the C2's internal IP
+      cmd: /usr/local/bin/sliver-server operator --name {{ sliver_operator_name }} --lhost {{ internal_bind_ip }} --permissions all --save /home/cyberfox/cybefox-sliver-c2.cfg
+      creates: /home/cyberfox/cybefox-sliver-c2.cfg
+    when: sliver_mode == 'server'
+
+  - name: Ensure correct permissions on the Operator config
+    ansible.builtin.file:
+      path: "/home/cyberfox/cybefox-sliver-c2.cfg"
+      owner: cyberfox
+      group: cyberfox
+      mode: '0600'
+    when: sliver_mode == 'server'
+
+  - name: Fetch the Sliver Operator config back to the Ansible controller
+    ansible.builtin.fetch:
+      src: "/home/cyberfox/cybefox-sliver-c2.cfg"
+      # This will drop it into a 'fetched_configs' folder in your Ansible directory
+      dest: "./fetched_configs/"
+      flat: yes
+    when: sliver_mode == 'server'
+
+  - name: Download Sliver Client binary
+    ansible.builtin.get_url:
+      url: https://github.com/BishopFox/sliver/releases/download/v1.7.3/sliver-client_linux-amd64
+      dest: /usr/local/bin/sliver
+      mode: '0755'
+    when: sliver_mode == 'client'
+
+  - name: Create temporary directory for config transfer
+    ansible.builtin.file:
+      path: /tmp/sliver_transfer
+      state: directory
+      owner: cyberfox
+      group: cyberfox
+    when: sliver_mode == 'client'
+
+  - name: Push Operator config from Ansible controller to Kali
+    ansible.builtin.copy:
+      # Use hostvars to ask Ansible for the Ubuntu box's IP dynamically 
+      src: "./fetched_configs/cybefox-sliver-c2.cfg"
+      dest: "/tmp/sliver_transfer/cybefox-sliver-c2.cfg"
+      owner: cyberfox
+      group: cyberfox
+      mode: '0600'
+    when: sliver_mode == 'client'
+
+  - name: Import the config into Sliver
+    become: yes
+    become_user: cyberfox
+    ansible.builtin.command:
+      cmd: sliver import /tmp/sliver_transfer/cybefox-sliver-c2.cfg
+    args:
+      creates: "/home/cyberfox/.sliver-client/configs/cybefox-sliver-c2.cfg"
+    when: sliver_mode == 'client'
+
+  - name: Clean up temporary transfer directory
+    ansible.builtin.file:
+      path: /tmp/sliver_transfer
+      state: absent
+    when: sliver_mode == 'client'

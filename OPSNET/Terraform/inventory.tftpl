@@ -1,0 +1,7 @@
+[opsnet]
+kali ansible_host=${kali_ip} ansible_user=cyberfox
+c2-server ansible_host=${ubuntu_ip} ansible_user=cyberfox
+win10 ansible_host=${win_ip} ansible_user=cyberfox ansible_password="P@ssW0rd1!!!" ansible_connection=winrm ansible_winrm_transport=ntlm ansible_winrm_server_cert_validation=ignore ansible_port=5985
+
+[lab:children]
+opsnet

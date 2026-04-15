@@ -1,0 +1,123 @@
+---
+- name: Install native Kali packages
+  ansible.builtin.apt:
+    name:
+      - seclists
+      - tmux
+      - remmina
+      - masscan
+      - golang
+      - feroxbuster
+      - code-oss
+      - pipx
+      - curl
+      - wget
+    state: present
+    update_cache: yes
+
+
+# Typora
+- name: Add Typora GPG key
+  ansible.builtin.get_url:
+    url: https://typora.io/linux/public-key.asc
+    dest: /etc/apt/trusted.gpg.d/typora.asc
+
+- name: Add Typora APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb https://typora.io/linux ./"
+    state: present
+    filename: typora
+
+- name: Install Typora
+  ansible.builtin.apt:
+    name: typora
+    state: present
+    update_cache: yes
+
+#RustScan
+- name: Download RustScan zip
+  ansible.builtin.get_url:
+    url: https://github.com/bee-san/RustScan/releases/download/2.4.1/rustscan.deb.zip 
+    dest: /tmp/rustscan.zip
+    mode: '0644'
+
+- name: Unzip the package
+  ansible.builtin.unarchive:
+    src: /tmp/rustscan.zip
+    dest: /tmp/
+    remote_src: yes
+
+- name: Install RustScan (.deb)
+  ansible.builtin.apt:
+    deb: /tmp/rustscan_2.4.1-1_amd64.deb
+
+#Obsidian
+- name: Fetch the latest Obsidian release URL
+  ansible.builtin.shell: |
+    curl -s https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest | grep "browser_download_url.*amd64.deb" | cut -d '"' -f 4
+  register: obsidian_url
+  changed_when: false
+
+- name: Download and install Obsidian
+  ansible.builtin.apt:
+    deb: "{{ obsidian_url.stdout }}"
+
+
+- name: Download Ligolo-ng Proxy
+  ansible.builtin.unarchive:
+    src: https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.3/ligolo-ng_proxy_0.8.3_linux_amd64.tar.gz
+    dest: /usr/local/bin/
+    remote_src: yes
+    mode: '0755'
+
+
+- name: Install updog via pipx for cyberfox
+  become: yes
+  become_user: cyberfox
+  ansible.builtin.command: pipx install updog
+  args:
+    creates: /home/cyberfox/.local/bin/updog
+
+- name: Ensure cyberfox local bin is in PATH
+  ansible.builtin.lineinfile:
+    path: /home/cyberfox/.zshrc
+    line: 'export PATH="$PATH:/home/cyberfox/.local/bin"'
+    create: yes
+
+- name: Import custom Tmux configuration
+  ansible.builtin.copy:
+    # Point this to where your tmux.conf is stored in your Ansible repo
+    src: files/tmux.conf 
+    dest: /home/cyberfox/.tmux.conf
+    owner: cyberfox
+    group: cyberfox
+    mode: '0644'
+
+- name: Ensure Firefox distribution directory exists
+  ansible.builtin.file:
+    path: /usr/share/firefox-esr/distribution
+    state: directory
+    mode: '0755'
+
+- name: Deploy Firefox Extension Policy
+  ansible.builtin.copy:
+    dest: /usr/share/firefox-esr/distribution/policies.json
+    content: |
+      {
+        "policies": {
+          "ExtensionSettings": {
+            "foxyproxy@eric.h.jung": {
+              "installation_mode": "force_installed",
+              "install_url": "https://addons.mozilla.org/firefox/downloads/latest/foxyproxy-standard/latest.xpi"
+            },
+            "{c3610815-4df6-4f40-84e9-1cdb71fb6271}": {
+              "installation_mode": "force_installed",
+              "install_url": "https://addons.mozilla.org/firefox/downloads/latest/cookie-editor/latest.xpi"
+            },
+            "wappalyzer@nqntn.com": {
+              "installation_mode": "force_installed",
+              "install_url": "https://addons.mozilla.org/firefox/downloads/latest/wappalyzer/latest.xpi"
+            }
+          }
+        }
+      }

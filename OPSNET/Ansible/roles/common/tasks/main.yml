@@ -1,0 +1,4 @@
+---
+- name: Set system keyboard layout to UK
+  ansible.builtin.command: localectl set-x11-keymap gb
+  changed_when: false

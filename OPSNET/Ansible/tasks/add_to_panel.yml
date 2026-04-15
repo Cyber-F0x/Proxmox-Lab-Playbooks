@@ -1,0 +1,38 @@
+---
+# This task expects a dictionary named 'app' with: name, exec, icon, id
+- name: "Panel | Ensure config directory for {{ app.name }}"
+  ansible.builtin.file:
+    path: "/home/{{ target_user }}/.config/xfce4/panel/launcher-{{ app.id }}"
+    state: directory
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+
+- name: "Panel | Create .desktop file for {{ app.name }}"
+  ansible.builtin.copy:
+    dest: "/home/{{ target_user }}/.config/xfce4/panel/launcher-{{ app.id }}/{{ app.name | lower }}.desktop"
+    content: |
+      [Desktop Entry]
+      Version=1.0
+      Type=Application
+      Name={{ app.name }}
+      Exec={{ app.exec }}
+      Icon={{ app.icon }}
+      Terminal={{ app.terminal | default('false') }}
+      StartupNotify=true
+    owner: "{{ target_user }}"
+    group: "{{ target_user }}"
+    mode: '0755'
+
+- name: "Panel | Register {{ app.name }} via Xfconf"
+  ansible.builtin.shell: |
+    export $(dbus-launch)
+    xfconf-query -c xfce4-panel -p /plugins/plugin-{{ app.id }} -n -t string -s "launcher"
+    xfconf-query -c xfce4-panel -p /plugins/plugin-{{ app.id }}/items -n -t string -s "{{ app.name | lower }}.desktop" -a
+    
+    CURRENT_IDS=$(xfconf-query -c xfce4-panel -p /panels/panel-1/plugin-ids)
+    if [[ ! "$CURRENT_IDS" =~ "{{ app.id }}" ]]; then
+      xfconf-query -c xfce4-panel -p /panels/panel-1/plugin-ids -n -t int -s {{ app.id }} -a
+    fi
+  become: yes
+  become_user: "{{ target_user }}"

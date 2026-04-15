@@ -1,0 +1,19 @@
+.
+├── build.sh
+├── http
+│   └── kali-preseed.cfg
+├── ops.pkrvars.hcl
+├── templates
+│   ├── c2-server
+│   │   ├── c2-server.pkr.hcl
+│   │   └── cidata
+│   │       ├── meta-data
+│   │       └── user-data
+│   ├── devbox
+│   │   └── devbox.pkr.hcl
+│   └── kali
+│       └── kali-2025.pkr.hcl
+├── tree.txt
+└── variables.pkr.hcl
+
+7 directories, 10 files

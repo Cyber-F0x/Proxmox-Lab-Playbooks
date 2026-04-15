@@ -1,0 +1,3 @@
+sliver_mode: client
+ansible_become_password: "password"
+target_user: "cyberfox"

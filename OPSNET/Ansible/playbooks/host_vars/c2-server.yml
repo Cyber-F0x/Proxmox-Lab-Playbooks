@@ -1,0 +1,7 @@
+---
+sliver_mode: server
+sliver_operator_name: cyberfox
+# We'll use the ansible_host variable (defined in your inventory) to bind services
+internal_bind_ip: "{{ ansible_host }}"
+ansible_become_password: "password"
+target_user: "cyberfox"

@@ -1,0 +1,32 @@
+---
+- name: Install xrdp
+  ansible.builtin.apt:
+    name: 
+      - xrdp
+      - xorgxrdp 
+    state: present
+    update_cache: yes
+  become: yes
+
+- name: Configure xsession for the cyberfox user
+  ansible.builtin.copy:
+    content: "startxfce4"
+    dest: "/home/cyberfox/.xsession"
+    owner: cyberfox
+    group: cyberfox
+    mode: '0644'
+
+- name: Ensure xrdp service is started and enabled 
+  ansible.builtin.systemd:
+    name: xrdp
+    state: started
+    enabled: yes
+  become: yes
+
+- name: Add ssl-cert group to xrdp user
+  ansible.builtin.user:
+    name: xrdp
+    groups: ssl-cert
+    append: yes
+  become: yes
+  notify: Restart xrdp

@@ -1,0 +1,5 @@
+---
+- name: restart_sliver
+  ansible.builtin.systemd:
+    name: sliver
+    state: restarted

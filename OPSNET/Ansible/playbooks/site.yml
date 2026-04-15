@@ -1,0 +1,63 @@
+
+
+# Todo
+# Add SMB
+# Change passwords across all
+# Probably something with static routes and /etc/hosts
+# Pivot to keys
+
+
+---
+# 1. Build the Dev box
+# Commented out at the moment so i can test the c2. 
+- hosts: win10
+  roles:
+    - windows_dev
+    - visualstudio
+
+
+# 2. Build the C2 Server
+- hosts: c2-server
+  become: yes
+  roles:
+    - bloodhound
+    - sliver 
+    #- common
+  post_tasks:
+    - name: Reboot the C2 VM to apply all changes
+      reboot:
+        msg: "Reboot initiated by Ansible after Lab Setup"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: uptime
+      become: yes
+
+# 3. Build the Attacker Box
+- hosts: kali
+  become: yes
+  vars:
+    ansible_become_password: "password"
+    target_user: "cyberfox"
+  roles:
+    - attacker
+    - sliver
+    #- common 
+    - remote_access
+
+  post_tasks:
+    - name: Add Remmina Connetion
+      ansible.builtin.include_tasks: ../tasks/remmina.yml
+
+    - name: Reboot the Kali VM to apply all changes
+      reboot:
+        msg: "Reboot initiated by Ansible after Lab Setup"
+        connect_timeout: 5
+        reboot_timeout: 300
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: uptime
+      become: yes
+
+  

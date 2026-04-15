@@ -1,0 +1,28 @@
+#cloud-config
+autoinstall:
+  version: 1
+  refresh-installer:
+    update: false
+  locale: en_GB.UTF-8
+  keyboard:
+    layout: gb
+  identity:
+    hostname: kali-opsnet
+    password: "$6$kDuqJv.jmCJN4nlS$vloXzABTf1FZZm1IvDBGZ4dK2wm11DITpb/MDm9buwKInB.vSFEZ4Hd9M.heRDH8kA9PUC.yjr9nR5vFwXYli/"
+    username: cyberfox
+  ssh:
+    allow-pw: true
+    install-server: true
+  packages:
+    - qemu-guest-agent
+  user-data:
+    package_upgrade: true
+    users:
+      - name: cyberfox
+        groups: [sudo]
+        shell: /bin/bash
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        lock_passwd: false
+        passwd: "$6$kDuqJv.jmCJN4nlS$vloXzABTf1FZZm1IvDBGZ4dK2wm11DITpb/MDm9buwKInB.vSFEZ4Hd9M.heRDH8kA9PUC.yjr9nR5vFwXYli/"
+  # Force the installer to reboot into the OS when done
+  shutdown: reboot

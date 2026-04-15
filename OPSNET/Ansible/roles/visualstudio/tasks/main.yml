@@ -1,0 +1,28 @@
+---
+- name: Install Visual Studio 2026 Community Base
+  win_chocolatey:
+    name: visualstudio2026community
+    state: present
+    install_args: "--passive --norestart --wait"
+  register: vs_install
+  retries: 3           # Try up to 3 times
+  delay: 30            # Wait 30 seconds between attempts
+  until: vs_install is success
+
+- name: Wait for lingering Visual Studio installer background processes to finish
+  ansible.windows.win_shell: |
+    Write-Host "Waiting for VS Installer to finish..."
+    while (Get-Process -Name "setup", "vs_installer", "vs_installershell" -ErrorAction SilentlyContinue) {
+        Start-Sleep -Seconds 15
+        Write-Host "Still waiting..."
+    }
+    Write-Host "Installer processes have cleanly exited."
+  # This might take a few minutes depending on background NGEN tasks
+  timeout: 1800 
+
+- name: Install Visual Studio 2026 Native Desktop Workload
+  win_chocolatey:
+    name: visualstudio2026-workload-nativedesktop
+    state: present
+    install_args: "--passive --norestart --includeRecommended"
+  timeout: 3600

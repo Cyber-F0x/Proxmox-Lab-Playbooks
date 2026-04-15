@@ -1,0 +1,40 @@
+---
+- name: Install Docker and dependencies
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-v2
+    state: present
+    update_cache: yes
+
+- name: Create BloodHound directory
+  ansible.builtin.file:
+    path: /opt/bloodhound
+    state: directory
+    mode: '0755'
+
+- name: Download BloodHound docker-compose.yml
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/SpecterOps/BloodHound/refs/heads/main/examples/docker-compose/docker-compose.yml
+    dest: /opt/bloodhound/docker-compose.yml
+
+
+- name: Download BloodHound json
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/SpecterOps/BloodHound/refs/heads/main/examples/docker-compose/bloodhound.config.json
+    dest: /opt/bloodhound/bloodhound.config.json
+
+#- name: Restrict BloodHound web interface to internal network only
+#  ansible.builtin.replace:
+#    path: /opt/bloodhound/docker-compose.yml
+#    # Changes "8080:8080" to "10.0.x.x:8080:8080" so it doesn't bind to 0.0.0.0
+#    regexp: '-\s*"8080:8080"'
+#    replace: '- "{{ internal_bind_ip }}:8080:8080"'
+
+- name: Start BloodHound containers
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: /opt/bloodhound
+  # Docker compose is idempotent enough for this, but we register it to keep output clean
+  register: compose_output
+  changed_when: "'Started' in compose_output.stdout or 'Created' in compose_output.stdout"
